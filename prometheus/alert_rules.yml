@@ -1,0 +1,43 @@
+groups:
+  - name: devops-monitor-alerts
+    rules:
+
+      # Alert when app is down
+      - alert: AppDown
+        expr: up{job="devops-monitor-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 App is DOWN!"
+          description: "The devops-monitor app has been down for more than 1 minute."
+
+      # Alert when CPU is high
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ High CPU Usage"
+          description: "CPU usage is above 80% for more than 2 minutes."
+
+      # Alert when memory is high
+      - alert: HighMemory
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ High Memory Usage"
+          description: "Memory usage is above 85%."
+
+      # Alert when error rate is high
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ High Error Rate"
+          description: "More than 10% of requests are returning 5xx errors."

@@ -1,0 +1,31 @@
+global:
+  # How long to wait before resending an alert
+  resolve_timeout: 5m
+
+# ── ROUTING ──
+# Decides which alerts go where
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'slack-notifications'
+
+# ── RECEIVERS ──
+# Where to send alerts
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'    # from your environment variable
+        channel: '#devops-alerts'           # your Slack channel name
+        send_resolved: true                 # also notify when alert is fixed
+
+        # Message format for NEW alerts
+        title: '{{ if eq .Status "firing" }}🚨 ALERT{{ else }}✅ RESOLVED{{ end }}: {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Status:* {{ .Status | toUpper }}
+          *Alert:* {{ .Annotations.summary }}
+          *Details:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity | toUpper }}
+          {{ end }}

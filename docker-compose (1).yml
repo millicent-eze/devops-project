@@ -1,0 +1,102 @@
+version: '3.8'
+
+# ── DEVOPS MONITORING PLATFORM ──
+# Runs 5 containers together:
+# 1. Your Node.js app
+# 2. Prometheus (collects metrics)
+# 3. Grafana (displays metrics)
+# 4. Node Exporter (server metrics)
+# 5. Alertmanager (sends Slack alerts)
+
+services:
+
+  # ── 1. YOUR NODE.JS APP ──
+  app:
+    build: ./app
+    container_name: monitor-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    networks:
+      - monitor-network
+
+  # ── 2. PROMETHEUS ──
+  # Collects metrics from your app every 15 seconds
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitor-network
+
+  # ── 3. GRAFANA ──
+  # Beautiful dashboard to visualize your metrics
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=devops123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - monitor-network
+
+  # ── 4. NODE EXPORTER ──
+  # Collects server metrics (CPU, RAM, disk, network)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+    networks:
+      - monitor-network
+
+  # ── 5. ALERTMANAGER ──
+  # Receives alerts from Prometheus and sends to Slack
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    networks:
+      - monitor-network
+
+networks:
+  monitor-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

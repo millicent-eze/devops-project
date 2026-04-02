@@ -1,0 +1,30 @@
+# ── PROMETHEUS CONFIGURATION ──
+# Prometheus scrapes (collects) metrics from your app every 15 seconds
+
+global:
+  scrape_interval: 15s        # collect metrics every 15 seconds
+  evaluation_interval: 15s    # evaluate alert rules every 15 seconds
+
+# ── ALERT RULES ──
+rule_files:
+  - "alert_rules.yml"
+
+# ── SCRAPE TARGETS ──
+# These are the endpoints Prometheus collects metrics from
+scrape_configs:
+
+  # Prometheus monitors itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Your Node.js app metrics
+  - job_name: 'devops-monitor-app'
+    static_configs:
+      - targets: ['app:3000']    # 'app' is the Docker service name
+    metrics_path: '/metrics'     # the endpoint we built in server.js
+
+  # Node Exporter — collects server-level metrics (CPU, RAM, disk)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
