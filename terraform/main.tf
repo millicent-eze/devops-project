@@ -103,22 +103,8 @@ resource "aws_instance" "monitor_server" {
 
 # ── S3 BUCKET ──
 # Stores Terraform state and app assets
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = "devops-monitor-terraform-state"
 
-  tags = {
-    Name    = "Terraform State"
-    Project = "devops-monitor"
-  }
-}
-
-# Enable versioning on S3 — keeps history of state files
-resource "aws_s3_bucket_versioning" "state_versioning" {
-  bucket = aws_s3_bucket.terraform_state.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
+    
 
 # ── CLOUDWATCH ALARM ──
 # Sends alert when CPU is too high
