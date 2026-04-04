@@ -77,7 +77,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy files to EC2
+# Fix folder permissions before copying files
+      - name: Fix EC2 folder permissions
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo mkdir -p /home/ubuntu/devops-monitor
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/devops-monitor
+            sudo chmod -R 755 /home/ubuntu/devops-monitor
+
+      -- name: Copy files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -85,16 +97,17 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "."
           target: "/home/ubuntu/devops-monitor"
-
-      - name: Deploy with Docker Compose
-        uses: appleboy/ssh-action@v1.0.0
-        with:
+      -- name: Deploy with Docker Compose
+         uses: appleboy/ssh-action@v1.0.0
+         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/devops-monitor
-
+            # Fix permissions on the folder
+            sudo mkdir -p /home/ubuntu/devops-monitor
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/devops-monitor
+            sudo chmod -R 755 /home/ubuntu/devops-monitor
             # Set Slack webhook URL
             export SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
 
